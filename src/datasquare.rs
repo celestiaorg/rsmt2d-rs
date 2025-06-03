@@ -1,4 +1,4 @@
-use crate::{Error, Result, TreeConstructorFn, Axis};
+use crate::{Axis, Error, Result, TreeConstructorFn};
 
 /// DataSquare stores all data for an original data square (ODS) or extended
 /// data square (EDS). Data is duplicated in both row-major and column-major
@@ -28,11 +28,9 @@ impl DataSquare {
         }
 
         // Validate share sizes
-        for d in &data {
-            if let Some(share) = d {
-                if share.len() != share_size {
-                    return Err(Error::UnevenChunks);
-                }
+        for share in data.iter().flatten() {
+            if share.len() != share_size {
+                return Err(Error::UnevenChunks);
             }
         }
 
@@ -75,10 +73,11 @@ impl DataSquare {
         let mut new_square_row = Vec::with_capacity(new_width);
 
         // Create filler row for extensions
-        let filler_extended_row: Vec<Option<Vec<u8>>> = 
-            (0..extended_width).map(|_| Some(filler_share.clone())).collect();
+        let filler_extended_row: Vec<Option<Vec<u8>>> = (0..extended_width)
+            .map(|_| Some(filler_share.clone()))
+            .collect();
 
-        let filler_row: Vec<Option<Vec<u8>>> = 
+        let filler_row: Vec<Option<Vec<u8>>> =
             (0..new_width).map(|_| Some(filler_share.clone())).collect();
 
         // Extend existing rows
@@ -112,7 +111,12 @@ impl DataSquare {
     }
 
     /// Get a row slice.
-    pub fn row_slice(&self, row_idx: usize, from_idx: usize, length: usize) -> Vec<Option<Vec<u8>>> {
+    pub fn row_slice(
+        &self,
+        row_idx: usize,
+        from_idx: usize,
+        length: usize,
+    ) -> Vec<Option<Vec<u8>>> {
         let end_idx = from_idx + length;
         self.square_row[row_idx][from_idx..end_idx].to_vec()
     }
@@ -211,7 +215,10 @@ impl DataSquare {
     /// Set a specific cell. The cell to set must be None.
     pub fn set_cell(&mut self, row_idx: usize, col_idx: usize, new_share: Vec<u8>) -> Result<()> {
         if self.square_row[row_idx][col_idx].is_some() {
-            return Err(Error::CellAlreadySet { row: row_idx, col: col_idx });
+            return Err(Error::CellAlreadySet {
+                row: row_idx,
+                col: col_idx,
+            });
         }
         if new_share.len() != self.share_size {
             return Err(Error::CellChunkSizeMismatch {
@@ -249,15 +256,13 @@ impl DataSquare {
     pub fn get_row_root(&self, row_idx: usize) -> Result<Vec<u8>> {
         let mut tree = (self.create_tree_fn)(Axis::Row, row_idx);
         let row = self.row(row_idx);
-        
+
         if !is_complete(&row) {
             return Err(Error::IncompleteAxis { axis: Axis::Row });
         }
 
-        for share_opt in row {
-            if let Some(share) = share_opt {
-                tree.push(&share)?;
-            }
+        for share in row.into_iter().flatten() {
+            tree.push(&share)?;
         }
 
         tree.root()
@@ -267,15 +272,13 @@ impl DataSquare {
     pub fn get_col_root(&self, col_idx: usize) -> Result<Vec<u8>> {
         let mut tree = (self.create_tree_fn)(Axis::Col, col_idx);
         let col = self.col(col_idx);
-        
+
         if !is_complete(&col) {
             return Err(Error::IncompleteAxis { axis: Axis::Col });
         }
 
-        for share_opt in col {
-            if let Some(share) = share_opt {
-                tree.push(&share)?;
-            }
+        for share in col.into_iter().flatten() {
+            tree.push(&share)?;
         }
 
         tree.root()

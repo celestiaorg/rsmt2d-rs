@@ -1,5 +1,5 @@
-use sha2::{Sha256, Digest};
-use crate::{Result};
+use crate::Result;
+use sha2::{Digest, Sha256};
 
 /// Represents which axis (row or column) a tree is for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,7 +24,7 @@ pub type TreeConstructorFn = fn(axis: Axis, index: usize) -> Box<dyn Tree>;
 pub trait Tree: Send + Sync {
     /// Push data to the tree.
     fn push(&mut self, data: &[u8]) -> Result<()>;
-    
+
     /// Compute and return the root of the tree.
     fn root(&mut self) -> Result<Vec<u8>>;
 }
@@ -51,13 +51,13 @@ impl DefaultTree {
         }
 
         let mut current_level = self.leaves.clone();
-        
+
         while current_level.len() > 1 {
             let mut next_level = Vec::new();
-            
+
             for chunk in current_level.chunks(2) {
                 let mut hasher = Sha256::new();
-                
+
                 if chunk.len() == 2 {
                     // Hash left + right
                     hasher.update(&chunk[0]);
@@ -67,14 +67,17 @@ impl DefaultTree {
                     hasher.update(&chunk[0]);
                     hasher.update(&chunk[0]);
                 }
-                
+
                 next_level.push(hasher.finalize().to_vec());
             }
-            
+
             current_level = next_level;
         }
-        
-        Ok(current_level.into_iter().next().unwrap_or_else(|| vec![0; 32]))
+
+        Ok(current_level
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| vec![0; 32]))
     }
 }
 

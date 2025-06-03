@@ -1,7 +1,5 @@
+use crate::{Axis, ByzantineDataError, Codec, DataSquare, Error, Result, TreeConstructorFn};
 use std::sync::Arc;
-use crate::{
-    Codec, DataSquare, Error, Result, TreeConstructorFn, Axis, ByzantineDataError
-};
 
 /// ExtendedDataSquare represents an extended piece of data.
 #[derive(Clone)]
@@ -39,7 +37,8 @@ impl ExtendedDataSquare {
 
         // Extend original square with filler shares
         let filler_share = vec![0u8; self.data_square.share_size()];
-        self.data_square.extend_square(self.data_square.width(), filler_share)?;
+        self.data_square
+            .extend_square(self.data_square.width(), filler_share)?;
 
         // Populate filler shares in Q1 and Q2
         for i in 0..self.original_data_width {
@@ -57,8 +56,10 @@ impl ExtendedDataSquare {
 
     /// Extend a row with erasure data.
     fn erasure_extend_row(&mut self, row_idx: usize) -> Result<()> {
-        let row_slice = self.data_square.row_slice(row_idx, 0, self.original_data_width);
-        
+        let row_slice = self
+            .data_square
+            .row_slice(row_idx, 0, self.original_data_width);
+
         // Convert Option<Vec<u8>> to Vec<u8> for encoding
         let data: Vec<Vec<u8>> = row_slice
             .into_iter()
@@ -66,14 +67,17 @@ impl ExtendedDataSquare {
             .collect();
 
         let parity_shares = self.codec.encode(&data)?;
-        self.data_square.set_row_slice(row_idx, self.original_data_width, parity_shares)?;
+        self.data_square
+            .set_row_slice(row_idx, self.original_data_width, parity_shares)?;
         Ok(())
     }
 
     /// Extend a column with erasure data.
     fn erasure_extend_col(&mut self, col_idx: usize) -> Result<()> {
-        let col_slice = self.data_square.col_slice(0, col_idx, self.original_data_width);
-        
+        let col_slice = self
+            .data_square
+            .col_slice(0, col_idx, self.original_data_width);
+
         // Convert Option<Vec<u8>> to Vec<u8> for encoding
         let data: Vec<Vec<u8>> = col_slice
             .into_iter()
@@ -81,7 +85,8 @@ impl ExtendedDataSquare {
             .collect();
 
         let parity_shares = self.codec.encode(&data)?;
-        self.data_square.set_col_slice(col_idx, self.original_data_width, parity_shares)?;
+        self.data_square
+            .set_col_slice(col_idx, self.original_data_width, parity_shares)?;
         Ok(())
     }
 
@@ -122,8 +127,8 @@ impl ExtendedDataSquare {
         let mut flattened = Vec::with_capacity(self.original_data_width * self.original_data_width);
         for row_idx in 0..self.original_data_width {
             let row = self.row(row_idx);
-            for col_idx in 0..self.original_data_width {
-                flattened.push(row[col_idx].clone());
+            for item in row.iter().take(self.original_data_width) {
+                flattened.push(item.clone());
             }
         }
         flattened
@@ -171,11 +176,7 @@ impl ExtendedDataSquare {
     }
 
     /// Repair attempts to repair an incomplete extended data square.
-    pub fn repair(
-        &mut self,
-        row_roots: &[Vec<u8>],
-        col_roots: &[Vec<u8>],
-    ) -> Result<()> {
+    pub fn repair(&mut self, row_roots: &[Vec<u8>], col_roots: &[Vec<u8>]) -> Result<()> {
         self.pre_repair_sanity_check(row_roots, col_roots)?;
         self.solve_crossword(row_roots, col_roots)
     }
@@ -197,7 +198,8 @@ impl ExtendedDataSquare {
                 let computed_root = self.data_square.get_row_root(i)?;
                 if computed_root != row_roots[i] {
                     return Err(Error::ReedSolomonError(format!(
-                        "Pre-repair sanity check failed: row {} has incorrect root", i
+                        "Pre-repair sanity check failed: row {} has incorrect root",
+                        i
                     )));
                 }
             }
@@ -207,7 +209,8 @@ impl ExtendedDataSquare {
                 let computed_root = self.data_square.get_col_root(i)?;
                 if computed_root != col_roots[i] {
                     return Err(Error::ReedSolomonError(format!(
-                        "Pre-repair sanity check failed: column {} has incorrect root", i
+                        "Pre-repair sanity check failed: column {} has incorrect root",
+                        i
                     )));
                 }
             }
@@ -217,11 +220,7 @@ impl ExtendedDataSquare {
     }
 
     /// Solve the crossword puzzle to repair the EDS.
-    fn solve_crossword(
-        &mut self,
-        row_roots: &[Vec<u8>],
-        col_roots: &[Vec<u8>],
-    ) -> Result<()> {
+    fn solve_crossword(&mut self, row_roots: &[Vec<u8>], col_roots: &[Vec<u8>]) -> Result<()> {
         // Keep repeating until the square is solved
         loop {
             let mut solved = true;
@@ -229,8 +228,10 @@ impl ExtendedDataSquare {
 
             // Try to solve each row and column
             for i in 0..self.width() {
-                let (solved_row, progress_row) = self.solve_crossword_row(i, row_roots, col_roots)?;
-                let (solved_col, progress_col) = self.solve_crossword_col(i, row_roots, col_roots)?;
+                let (solved_row, progress_row) =
+                    self.solve_crossword_row(i, row_roots, col_roots)?;
+                let (solved_col, progress_col) =
+                    self.solve_crossword_col(i, row_roots, col_roots)?;
 
                 if !solved_row || !solved_col {
                     solved = false;
@@ -257,7 +258,7 @@ impl ExtendedDataSquare {
         _col_roots: &[Vec<u8>],
     ) -> Result<(bool, bool)> {
         let row = self.row(row_idx);
-        
+
         if is_complete_optional(&row) {
             return Ok((true, false));
         }
@@ -265,14 +266,14 @@ impl ExtendedDataSquare {
         // Try to reconstruct using Reed-Solomon
         if self.can_reconstruct(&row) {
             let reconstructed = self.codec.decode(&row)?;
-            
+
             // Verify the reconstruction
             let mut tree = crate::new_default_tree(Axis::Row, row_idx);
             for share in &reconstructed {
                 tree.push(share)?;
             }
             let computed_root = tree.root()?;
-            
+
             if computed_root == row_roots[row_idx] {
                 // Update the row
                 for (col_idx, share) in reconstructed.into_iter().enumerate() {
@@ -283,7 +284,9 @@ impl ExtendedDataSquare {
                 return Ok((true, true));
             } else {
                 // Byzantine data detected
-                let shares = row.into_iter().enumerate()
+                let shares = row
+                    .into_iter()
+                    .enumerate()
                     .filter(|(col_idx, _)| self.data_square.get_cell(row_idx, *col_idx).is_some())
                     .map(|(_, share)| share)
                     .collect();
@@ -311,7 +314,7 @@ impl ExtendedDataSquare {
         col_roots: &[Vec<u8>],
     ) -> Result<(bool, bool)> {
         let col = self.col(col_idx);
-        
+
         if is_complete_optional(&col) {
             return Ok((true, false));
         }
@@ -319,14 +322,14 @@ impl ExtendedDataSquare {
         // Try to reconstruct using Reed-Solomon
         if self.can_reconstruct(&col) {
             let reconstructed = self.codec.decode(&col)?;
-            
+
             // Verify the reconstruction
             let mut tree = crate::new_default_tree(Axis::Col, col_idx);
             for share in &reconstructed {
                 tree.push(share)?;
             }
             let computed_root = tree.root()?;
-            
+
             if computed_root == col_roots[col_idx] {
                 // Update the column
                 for (row_idx, share) in reconstructed.into_iter().enumerate() {
@@ -337,7 +340,9 @@ impl ExtendedDataSquare {
                 return Ok((true, true));
             } else {
                 // Byzantine data detected
-                let shares = col.into_iter().enumerate()
+                let shares = col
+                    .into_iter()
+                    .enumerate()
                     .filter(|(row_idx, _)| self.data_square.get_cell(*row_idx, col_idx).is_some())
                     .map(|(_, share)| share)
                     .collect();
@@ -380,7 +385,7 @@ pub fn compute_extended_data_square(
 
     // Convert to Option<Vec<u8>> format
     let data_with_options: Vec<Option<Vec<u8>>> = data.into_iter().map(Some).collect();
-    
+
     let data_square = DataSquare::new(data_with_options, tree_creator_fn, share_size)?;
     let mut eds = ExtendedDataSquare {
         data_square,
@@ -432,22 +437,21 @@ fn get_share_size(data: &[Vec<u8>]) -> usize {
 
 /// Get the share size from the first non-None share in optional data.
 fn get_share_size_optional(data: &[Option<Vec<u8>>]) -> usize {
-    for d in data {
-        if let Some(share) = d {
-            return share.len();
-        }
-    }
-    0
+    data.iter()
+        .flatten()
+        .next()
+        .map(|share| share.len())
+        .unwrap_or(0)
 }
 
 /// Deep copy a vector of byte vectors.
 fn deep_copy(original: &[Vec<u8>]) -> Vec<Vec<u8>> {
-    original.iter().map(|cell| cell.clone()).collect()
+    original.to_vec()
 }
 
 /// Deep copy a vector of optional byte vectors.
 fn deep_copy_optional(original: &[Option<Vec<u8>>]) -> Vec<Option<Vec<u8>>> {
-    original.iter().map(|cell| cell.clone()).collect()
+    original.to_vec()
 }
 
 /// Check if all shares in an optional slice are present.

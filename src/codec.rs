@@ -1,7 +1,7 @@
-use reed_solomon_erasure::{ReedSolomon, galois_8::Field as Galois8Field};
+use crate::{Error, Result};
+use reed_solomon_erasure::{galois_8::Field as Galois8Field, ReedSolomon};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use crate::{Error, Result};
 
 /// Codec trait for Reed-Solomon encoding and decoding.
 pub trait Codec: Send + Sync {
@@ -45,7 +45,7 @@ impl LeoRSCodec {
             let cache = self.enc_cache.read().map_err(|e| {
                 Error::ReedSolomonError(format!("Failed to read encoder cache: {}", e))
             })?;
-            
+
             if let Some(encoder) = cache.get(&data_len) {
                 return Ok(encoder.clone());
             }
@@ -84,12 +84,12 @@ impl Codec for LeoRSCodec {
 
         // Prepare shares: original data + space for parity
         let mut shares: Vec<Vec<u8>> = Vec::with_capacity(data_len * 2);
-        
+
         // Add original data
         for chunk in data {
             shares.push(chunk.clone());
         }
-        
+
         // Add empty parity slots
         for _ in 0..data_len {
             shares.push(vec![0; share_size]);

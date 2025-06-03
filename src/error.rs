@@ -1,5 +1,5 @@
-use thiserror::Error;
 use crate::Axis;
+use thiserror::Error;
 
 /// Result type alias for rsmt2d operations.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -23,16 +23,29 @@ pub enum Error {
     InvalidChunkSize(String),
 
     #[error("cannot set row slice at ({row}, {from}) of length {length}: because it would exceed the data square width {width}")]
-    RowSliceOutOfBounds { row: usize, from: usize, length: usize, width: usize },
+    RowSliceOutOfBounds {
+        row: usize,
+        from: usize,
+        length: usize,
+        width: usize,
+    },
 
     #[error("cannot set col slice at ({from}, {col}) of length {length}: because it would exceed the data square width {width}")]
-    ColSliceOutOfBounds { from: usize, col: usize, length: usize, width: usize },
+    ColSliceOutOfBounds {
+        from: usize,
+        col: usize,
+        length: usize,
+        width: usize,
+    },
 
     #[error("cannot set cell ({row}, {col}) as it already has a value")]
     CellAlreadySet { row: usize, col: usize },
 
     #[error("cannot set cell with chunk size {chunk_size} because dataSquare chunk size is {expected_size}")]
-    CellChunkSizeMismatch { chunk_size: usize, expected_size: usize },
+    CellChunkSizeMismatch {
+        chunk_size: usize,
+        expected_size: usize,
+    },
 
     #[error("cannot compute root of incomplete {axis}")]
     IncompleteAxis { axis: Axis },
