@@ -17,8 +17,11 @@ impl std::fmt::Display for Axis {
     }
 }
 
-/// Type alias for tree constructor functions.
-pub type TreeConstructorFn = fn(axis: Axis, index: usize) -> Box<dyn Tree>;
+/// Trait for constructing trees. This is more idiomatic in Rust than function types.
+pub trait TreeConstructor: Send + Sync {
+    /// Create a new tree for the given axis and index.
+    fn create_tree(&self, axis: Axis, index: usize) -> Box<dyn Tree>;
+}
 
 /// Tree wraps Merkle tree implementations to work with rsmt2d.
 pub trait Tree: Send + Sync {
@@ -105,5 +108,22 @@ impl Tree for DefaultTree {
         let root = self.compute_root()?;
         self.root = Some(root.clone());
         Ok(root)
+    }
+}
+
+/// Default implementation of TreeConstructor that creates DefaultTree instances.
+#[derive(Clone, Debug, Default)]
+pub struct DefaultTreeConstructor;
+
+impl DefaultTreeConstructor {
+    /// Create a new DefaultTreeConstructor.
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl TreeConstructor for DefaultTreeConstructor {
+    fn create_tree(&self, _axis: Axis, _index: usize) -> Box<dyn Tree> {
+        Box::new(DefaultTree::new())
     }
 }

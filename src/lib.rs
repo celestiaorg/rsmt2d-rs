@@ -11,7 +11,7 @@
 //! ## Quick Start
 //!
 //! ```rust
-//! use rsmt2d::{LeoRSCodec, compute_extended_data_square, new_default_tree};
+//! use rsmt2d::{LeoRSCodec, compute_extended_data_square, new_default_tree_constructor};
 //! use std::sync::Arc;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,7 +27,7 @@
 //! ];
 //!
 //! // Compute extended data square with parity
-//! let mut eds = compute_extended_data_square(data, codec, new_default_tree)?;
+//! let mut eds = compute_extended_data_square(data, codec, new_default_tree_constructor())?;
 //!
 //! // Get row and column roots for verification
 //! let row_roots = eds.row_roots()?;
@@ -44,6 +44,8 @@ pub mod error;
 pub mod extendeddatasquare;
 pub mod tree;
 
+use std::sync::Arc;
+
 // Re-export commonly used types
 pub use codec::{Codec, LeoRSCodec};
 pub use datasquare::DataSquare;
@@ -51,12 +53,18 @@ pub use error::{ByzantineDataError, Error, Result};
 pub use extendeddatasquare::{
     compute_extended_data_square, import_extended_data_square, ExtendedDataSquare,
 };
-pub use tree::{Axis, DefaultTree, Tree, TreeConstructorFn};
+pub use tree::{Axis, DefaultTree, DefaultTreeConstructor, Tree, TreeConstructor};
 
 /// The maximum number of shares supported by the Leopard codec in a 2D original data square.
 pub const MAX_CHUNKS_LEOPARD: usize = 32768 * 32768;
 
-/// Default tree constructor function that creates a DefaultTree.
+/// Create a default tree constructor that creates DefaultTree instances.
+pub fn new_default_tree_constructor() -> Arc<dyn TreeConstructor> {
+    Arc::new(DefaultTreeConstructor::new())
+}
+
+/// Legacy function for backward compatibility - creates a default tree.
+/// Prefer using `new_default_tree_constructor()` for new code.
 pub fn new_default_tree(_axis: Axis, _index: usize) -> Box<dyn Tree> {
     Box::new(DefaultTree::new())
 }
@@ -79,7 +87,7 @@ mod tests {
         let codec = Arc::new(LeoRSCodec::new());
 
         // Compute extended data square
-        let result = compute_extended_data_square(data, codec, new_default_tree);
+        let result = compute_extended_data_square(data, codec, new_default_tree_constructor());
         assert!(
             result.is_ok(),
             "Failed to compute extended data square: {:?}",

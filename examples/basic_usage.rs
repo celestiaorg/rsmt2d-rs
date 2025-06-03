@@ -1,4 +1,4 @@
-use rsmt2d::{compute_extended_data_square, new_default_tree, LeoRSCodec};
+use rsmt2d::{compute_extended_data_square, new_default_tree_constructor, LeoRSCodec};
 use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut eds = compute_extended_data_square(
         vec![ones, twos, threes, fours],
         codec.clone(),
-        new_default_tree,
+        new_default_tree_constructor(),
     )?;
 
     println!("Extended data square computed successfully!");

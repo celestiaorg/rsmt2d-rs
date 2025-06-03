@@ -1,5 +1,5 @@
 use rsmt2d::{
-    compute_extended_data_square, import_extended_data_square, new_default_tree, LeoRSCodec,
+    compute_extended_data_square, import_extended_data_square, new_default_tree_constructor, LeoRSCodec,
 };
 use std::sync::Arc;
 
@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut eds = compute_extended_data_square(
         vec![ones.clone(), twos.clone(), threes.clone(), fours.clone()],
         codec.clone(),
-        new_default_tree,
+        new_default_tree_constructor(),
     )?;
 
     println!("Original extended data square computed successfully!");
@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Re-import the data square.
     let mut incomplete_eds =
-        import_extended_data_square(flattened, codec.clone(), new_default_tree)?;
+        import_extended_data_square(flattened, codec.clone(), new_default_tree_constructor())?;
     println!("Imported incomplete EDS");
 
     // Attempt repair

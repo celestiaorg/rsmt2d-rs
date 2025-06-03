@@ -1,4 +1,5 @@
-use crate::{Axis, Error, Result, TreeConstructorFn};
+use crate::{Axis, Error, Result, TreeConstructor};
+use std::sync::Arc;
 
 /// DataSquare stores all data for an original data square (ODS) or extended
 /// data square (EDS). Data is duplicated in both row-major and column-major
@@ -11,15 +12,15 @@ pub struct DataSquare {
     share_size: usize,
     row_roots: Option<Vec<Vec<u8>>>,
     col_roots: Option<Vec<Vec<u8>>>,
-    create_tree_fn: TreeConstructorFn,
+    tree_constructor: Arc<dyn TreeConstructor>,
 }
 
 impl DataSquare {
-    /// Create a new DataSquare from the supplied data and tree creator.
+    /// Create a new DataSquare from the supplied data and tree constructor.
     /// No root calculation is performed. Data may have None values.
     pub fn new(
         data: Vec<Option<Vec<u8>>>,
-        tree_creator: TreeConstructorFn,
+        tree_constructor: Arc<dyn TreeConstructor>,
         share_size: usize,
     ) -> Result<Self> {
         let width = (data.len() as f64).sqrt().ceil() as usize;
@@ -59,7 +60,7 @@ impl DataSquare {
             share_size,
             row_roots: None,
             col_roots: None,
-            create_tree_fn: tree_creator,
+            tree_constructor,
         })
     }
 
@@ -252,9 +253,14 @@ impl DataSquare {
         self.share_size
     }
 
+    /// Get a reference to the tree constructor.
+    pub fn tree_constructor(&self) -> &Arc<dyn TreeConstructor> {
+        &self.tree_constructor
+    }
+
     /// Compute the row root for a given row index.
     pub fn get_row_root(&self, row_idx: usize) -> Result<Vec<u8>> {
-        let mut tree = (self.create_tree_fn)(Axis::Row, row_idx);
+        let mut tree = self.tree_constructor.create_tree(Axis::Row, row_idx);
         let row = self.row(row_idx);
 
         if !is_complete(&row) {
@@ -270,7 +276,7 @@ impl DataSquare {
 
     /// Compute the column root for a given column index.
     pub fn get_col_root(&self, col_idx: usize) -> Result<Vec<u8>> {
-        let mut tree = (self.create_tree_fn)(Axis::Col, col_idx);
+        let mut tree = self.tree_constructor.create_tree(Axis::Col, col_idx);
         let col = self.col(col_idx);
 
         if !is_complete(&col) {

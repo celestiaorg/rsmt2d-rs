@@ -1,4 +1,4 @@
-use crate::{Axis, ByzantineDataError, Codec, DataSquare, Error, Result, TreeConstructorFn};
+use crate::{Axis, ByzantineDataError, Codec, DataSquare, Error, Result, TreeConstructor};
 use std::sync::Arc;
 
 /// ExtendedDataSquare represents an extended piece of data.
@@ -13,7 +13,7 @@ impl ExtendedDataSquare {
     /// Create a new ExtendedDataSquare with specified parameters.
     pub fn new(
         codec: Arc<dyn Codec>,
-        tree_creator_fn: TreeConstructorFn,
+        tree_constructor: Arc<dyn TreeConstructor>,
         eds_width: usize,
         share_size: usize,
     ) -> Result<Self> {
@@ -21,7 +21,7 @@ impl ExtendedDataSquare {
         codec.validate_chunk_size(share_size)?;
 
         let data = vec![None; eds_width * eds_width];
-        let data_square = DataSquare::new(data, tree_creator_fn, share_size)?;
+        let data_square = DataSquare::new(data, tree_constructor, share_size)?;
 
         let original_data_width = eds_width / 2;
         Ok(ExtendedDataSquare {
@@ -268,7 +268,7 @@ impl ExtendedDataSquare {
             let reconstructed = self.codec.decode(&row)?;
 
             // Verify the reconstruction
-            let mut tree = crate::new_default_tree(Axis::Row, row_idx);
+            let mut tree = self.data_square.tree_constructor().create_tree(Axis::Row, row_idx);
             for share in &reconstructed {
                 tree.push(share)?;
             }
@@ -324,7 +324,7 @@ impl ExtendedDataSquare {
             let reconstructed = self.codec.decode(&col)?;
 
             // Verify the reconstruction
-            let mut tree = crate::new_default_tree(Axis::Col, col_idx);
+            let mut tree = self.data_square.tree_constructor().create_tree(Axis::Col, col_idx);
             for share in &reconstructed {
                 tree.push(share)?;
             }
@@ -374,7 +374,7 @@ impl ExtendedDataSquare {
 pub fn compute_extended_data_square(
     data: Vec<Vec<u8>>,
     codec: Arc<dyn Codec>,
-    tree_creator_fn: TreeConstructorFn,
+    tree_constructor: Arc<dyn TreeConstructor>,
 ) -> Result<ExtendedDataSquare> {
     if data.len() > codec.max_chunks() {
         return Err(Error::TooManyChunks);
@@ -386,7 +386,7 @@ pub fn compute_extended_data_square(
     // Convert to Option<Vec<u8>> format
     let data_with_options: Vec<Option<Vec<u8>>> = data.into_iter().map(Some).collect();
 
-    let data_square = DataSquare::new(data_with_options, tree_creator_fn, share_size)?;
+    let data_square = DataSquare::new(data_with_options, tree_constructor, share_size)?;
     let mut eds = ExtendedDataSquare {
         data_square,
         codec,
@@ -401,7 +401,7 @@ pub fn compute_extended_data_square(
 pub fn import_extended_data_square(
     data: Vec<Option<Vec<u8>>>,
     codec: Arc<dyn Codec>,
-    tree_creator_fn: TreeConstructorFn,
+    tree_constructor: Arc<dyn TreeConstructor>,
 ) -> Result<ExtendedDataSquare> {
     if data.len() > 4 * codec.max_chunks() {
         return Err(Error::TooManyChunks);
@@ -410,7 +410,7 @@ pub fn import_extended_data_square(
     let share_size = get_share_size_optional(&data);
     codec.validate_chunk_size(share_size)?;
 
-    let data_square = DataSquare::new(data, tree_creator_fn, share_size)?;
+    let data_square = DataSquare::new(data, tree_constructor, share_size)?;
     let eds_width = data_square.width();
     validate_eds_width(eds_width)?;
 

@@ -16,7 +16,7 @@ fn test_repair_functionality() {
     let original_data = test_data.clone();
 
     // Compute EDS
-    let mut eds = compute_extended_data_square(test_data, codec.clone(), new_default_tree)
+    let mut eds = compute_extended_data_square(test_data, codec.clone(), new_default_tree_constructor())
         .expect("Failed to compute EDS");
 
     let row_roots = eds.row_roots().expect("Failed to get row roots");
@@ -30,7 +30,7 @@ fn test_repair_functionality() {
     flattened[6] = None;
 
     // Import damaged data
-    let mut damaged_eds = import_extended_data_square(flattened, codec, new_default_tree)
+    let mut damaged_eds = import_extended_data_square(flattened, codec, new_default_tree_constructor())
         .expect("Failed to import damaged EDS");
 
     // Repair
@@ -76,7 +76,7 @@ fn test_uneven_chunks_error() {
         vec![4u8; 64],
     ];
 
-    let result = compute_extended_data_square(data, codec, new_default_tree);
+    let result = compute_extended_data_square(data, codec, new_default_tree_constructor());
     assert!(result.is_err());
 }
 
@@ -91,7 +91,7 @@ fn test_data_square_operations() {
     ];
 
     let mut ds =
-        DataSquare::new(data, new_default_tree, share_size).expect("Failed to create DataSquare");
+        DataSquare::new(data, new_default_tree_constructor(), share_size).expect("Failed to create DataSquare");
 
     // Test getting cells
     let cell_0_0 = ds.get_cell(0, 0);
@@ -126,11 +126,11 @@ fn test_eds_width_validation() {
     let codec = Arc::new(LeoRSCodec::new());
 
     // Odd widths should fail
-    let result = ExtendedDataSquare::new(codec.clone(), new_default_tree, 3, 64);
+    let result = ExtendedDataSquare::new(codec.clone(), new_default_tree_constructor(), 3, 64);
     assert!(result.is_err());
 
     // Even widths should succeed
-    let result = ExtendedDataSquare::new(codec, new_default_tree, 4, 64);
+    let result = ExtendedDataSquare::new(codec, new_default_tree_constructor(), 4, 64);
     assert!(result.is_ok());
 }
 
