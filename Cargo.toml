@@ -1,0 +1,20 @@
+[package]
+name = "rsmt2d"
+version = "0.1.0"
+edition = "2021"
+authors = ["Celestia Labs"]
+license = "Apache-2.0"
+description = "Rust implementation of two dimensional Reed-Solomon merkle tree data availability scheme"
+repository = "https://github.com/celestiaorg/rsmt2d-rs"
+keywords = ["erasure-coding", "reed-solomon", "merkle-tree", "data-availability"]
+categories = ["cryptography", "algorithms"]
+
+[dependencies]
+reed-solomon-erasure = "6.0"
+sha2 = "0.10"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+criterion = "0.5"
