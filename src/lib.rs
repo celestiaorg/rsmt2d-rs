@@ -48,9 +48,9 @@ pub mod extended_data_square;
 // Re-export main types and functions for convenient access
 pub use error::{EdsError, CodecError, RepairError, EdsResult, CodecResult, RepairResult};
 pub use traits::{Codec, Tree};
-pub use codec::{LeoRSCodec, new_leo_rs_codec, new_test_leo_rs_codec};
+pub use codec::{LeoRSCodec, new_leo_rs_codec, new_test_leo_rs_codec, new_small_leo_rs_codec, new_medium_leo_rs_codec};
 pub use tree::{DefaultTree, new_default_tree};
-pub use extended_data_square::ExtendedDataSquare;
+pub use extended_data_square::{ExtendedDataSquare, SquareIndex, DataSquareStats};
 
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

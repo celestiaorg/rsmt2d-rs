@@ -117,6 +117,18 @@ pub fn new_test_leo_rs_codec() -> LeoRSCodec {
     LeoRSCodec::new(2, 2).expect("Failed to create test Leo RS codec")
 }
 
+/// Factory function to create a small Leo Reed-Solomon codec for small data
+pub fn new_small_leo_rs_codec() -> LeoRSCodec {
+    // Use 4 data shards and 4 parity shards for smaller data sets
+    LeoRSCodec::new(4, 4).expect("Failed to create small Leo RS codec")
+}
+
+/// Factory function to create a medium Leo Reed-Solomon codec
+pub fn new_medium_leo_rs_codec() -> LeoRSCodec {
+    // Use 8 data shards and 8 parity shards for medium data sets
+    LeoRSCodec::new(8, 8).expect("Failed to create medium Leo RS codec")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -18,3 +18,7 @@ thiserror = "1.0"
 criterion = "0.5"
 proptest = "1.0"
 rayon = "1.7"
+
+[[bench]]
+name = "benchmarks"
+harness = false
